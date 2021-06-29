@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "fake_os.h"
 
 void FakeOS_init(FakeOS* os) {
-  List_init(&os->running);
+  for (int i=0; i<MAX_RUNNING; ++i) os->running[i]=0;
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
@@ -18,13 +19,12 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   assert(p->arrival_time==os->timer && "time mismatch in creation");
   // we check that in the list of PCBs there is no
   // pcb having the same pid
-  assert(!os->running[0] && "pid taken");
 
   int i;
   ListItem* aux;
 
   for (i=0; i<MAX_RUNNING; ++i){
-    assert(os->running[i]->pid!=p->pid && "pid taken");
+    assert((!os->running[i] || os->running[i]->pid!=p->pid) && "pid taken");
   }
 
   aux=os->ready.first;
@@ -126,8 +126,6 @@ void FakeOS_simStep(FakeOS* os){
     }
   }
 
-  
-
   // decrement the duration of running processes
   // if event over, destroy event
   // and reschedule process
@@ -135,7 +133,7 @@ void FakeOS_simStep(FakeOS* os){
   int i;
   for (i=0; i<MAX_RUNNING; ++i){
     FakePCB* running=os->running[i];
-    printf("\trunning pid: %d\n", running?running->pid:-1);
+    printf("\tCPU: %d, pid: %d\n", i+1, running?running->pid:-1);
     if (running) {
       ProcessEvent* e=(ProcessEvent*) running->events.first;
       assert(e->type==CPU);
@@ -166,19 +164,30 @@ void FakeOS_simStep(FakeOS* os){
     }
   }
 
+  aux=os->ready.first;
+  while(aux) {
+    FakePCB* pcb=(FakePCB*)aux;
+    aux=aux->next;
+    printf("\tready pid:%d\n",pcb->pid);
+  }
+  
   // call schedule, if defined
-  if (os->schedule_fn && ! os->running){
-    (*os->schedule_fn)(os, os->schedule_args); 
+  if (os->schedule_fn ){
+    for (i=0; i<MAX_RUNNING; ++i)
+      if (!os->running[i])
+        (*os->schedule_fn)(os, os->schedule_args, i);
   }
 
   // if running not defined and ready queue not empty
   // put the first in ready to run
-  if (! os->running && os->ready.first) {
-    os->running=(FakePCB*) List_popFront(&os->ready);
+  if (os->ready.first) {
+    for (i=0; i<MAX_RUNNING; ++i)
+      if (!os->running[i])
+        os->running[i]=(FakePCB*) List_popFront(&os->ready);
   }
-
+  
   ++os->timer;
-
+  printf("\n");
 }
 
 void FakeOS_destroy(FakeOS* os) {

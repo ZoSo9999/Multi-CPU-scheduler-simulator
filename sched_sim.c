@@ -9,7 +9,7 @@ typedef struct {
   int quantum;
 } SchedRRArgs;
 
-void schedRR(FakeOS* os, void* args_){
+void schedRR(FakeOS* os, void* args_, int cpu){
   SchedRRArgs* args=(SchedRRArgs*)args_;
 
   // look for the first process in ready
@@ -18,7 +18,7 @@ void schedRR(FakeOS* os, void* args_){
     return;
 
   FakePCB* pcb=(FakePCB*) List_popFront(&os->ready);
-  os->running=pcb;
+  os->running[cpu]=pcb;
   
   assert(pcb->events.first);
   ProcessEvent* e = (ProcessEvent*)pcb->events.first;
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
     }
   }
   printf("num processes in queue %d\n", os.processes.size);
-  while(os.running
+  while(os.running[0]
         || os.ready.first
         || os.waiting.first
         || os.processes.first){

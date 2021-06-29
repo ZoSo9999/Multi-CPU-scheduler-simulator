@@ -2,7 +2,7 @@
 #include "linked_list.h"
 #pragma once
 
-#define MAX_RUNNING 4
+#define MAX_RUNNING 1
 
 
 typedef struct {
@@ -12,7 +12,7 @@ typedef struct {
 } FakePCB;
 
 struct FakeOS;
-typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
+typedef void (*ScheduleFn)(struct FakeOS* os, void* args, int cpu);
 
 typedef struct FakeOS{
   FakePCB* running[MAX_RUNNING];
