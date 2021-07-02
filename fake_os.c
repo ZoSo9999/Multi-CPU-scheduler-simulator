@@ -5,8 +5,13 @@
 
 #include "fake_os.h"
 
-void FakeOS_init(FakeOS* os) {
-  for (int i=0; i<MAX_RUNNING; ++i) os->running[i]=0;
+void FakeOS_init(FakeOS* os, int n_cpu) {
+  if (n_cpu)  
+     os->n_cpu=n_cpu;
+  else 
+    os->n_cpu=MAX_RUNNING;
+  os->running=(FakePCB**)malloc(n_cpu*sizeof(FakePCB*));
+  for (int i=0; i<os->n_cpu; ++i) os->running[i]=0;
   List_init(&os->ready);
   List_init(&os->waiting);
   List_init(&os->processes);
@@ -23,7 +28,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   int i;
   ListItem* aux;
 
-  for (i=0; i<MAX_RUNNING; ++i){
+  for (i=0; i<os->n_cpu; ++i){
     assert((!os->running[i] || os->running[i]->pid!=p->pid) && "pid taken");
   }
 
@@ -131,7 +136,7 @@ void FakeOS_simStep(FakeOS* os){
   // and reschedule process
   // if last event, destroy running
   int i;
-  for (i=0; i<MAX_RUNNING; ++i){
+  for (i=0; i<os->n_cpu; ++i){
     FakePCB* running=os->running[i];
     printf("\tCPU: %d, pid: %d\n", i+1, running?running->pid:-1);
     if (running) {
@@ -173,7 +178,7 @@ void FakeOS_simStep(FakeOS* os){
   
   // call schedule, if defined
   if (os->schedule_fn ){
-    for (i=0; i<MAX_RUNNING; ++i)
+    for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
         (*os->schedule_fn)(os, os->schedule_args, i);
   }
@@ -181,13 +186,12 @@ void FakeOS_simStep(FakeOS* os){
   // if running not defined and ready queue not empty
   // put the first in ready to run
   if (os->ready.first) {
-    for (i=0; i<MAX_RUNNING; ++i)
+    for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
         os->running[i]=(FakePCB*) List_popFront(&os->ready);
   }
   
   ++os->timer;
-  printf("\n");
 }
 
 void FakeOS_destroy(FakeOS* os) {

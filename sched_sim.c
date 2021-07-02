@@ -39,13 +39,25 @@ void schedRR(FakeOS* os, void* args_, int cpu){
 };
 
 int main(int argc, char** argv) {
-  FakeOS_init(&os);
+  if (argc < 2) {
+    printf("use: ./nome_eseguibile n_cpu p1.txt p2.txt...\n");
+    return 0;
+  }
+
+  int i = 1;
+  int cpu = atoi(argv[1]);
+  if (cpu) {
+    os.n_cpu = cpu;
+    ++i;
+  }
+
+  FakeOS_init(&os,cpu);
   SchedRRArgs srr_args;
   srr_args.quantum=5;
   os.schedule_args=&srr_args;
   os.schedule_fn=schedRR;
   
-  for (int i=1; i<argc; ++i){
+  for (; i<argc; ++i){
     FakeProcess new_process;
     int num_events=FakeProcess_load(&new_process, argv[i]);
     printf("loading [%s], pid: %d, events:%d",
@@ -56,7 +68,7 @@ int main(int argc, char** argv) {
       List_pushBack(&os.processes, (ListItem*)new_process_ptr);
     }
   }
-  printf("num processes in queue %d\n", os.processes.size);
+  printf("num processes in queue %d, num cpu %d\n", os.processes.size, os.n_cpu);
   while(os.running[0]
         || os.ready.first
         || os.waiting.first
