@@ -15,6 +15,7 @@ typedef struct {
   ListItem list;
   int pid; // assigned by us
   int arrival_time;
+  int priority;
   ListHead events;
 } FakeProcess;
 

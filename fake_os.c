@@ -51,6 +51,9 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->list.next=new_pcb->list.prev=0;
   new_pcb->pid=p->pid;
   new_pcb->events=p->events;
+  new_pcb->priority=p->priority;
+  new_pcb->arrival_time=-1;
+  new_pcb->age=0;
 
   assert(new_pcb->events.first && "process without events");
 
@@ -59,6 +62,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
+    new_pcb->arrival_time=os->timer;
     List_pushBack(&os->ready, (ListItem*) new_pcb);
     break;
   case IO:
@@ -152,14 +156,17 @@ void FakeOS_simStep(FakeOS* os){
           printf("\t\tend process\n");
           free(running); // kill process
         } else {
+          running->age=0;
           e=(ProcessEvent*) running->events.first;
           switch (e->type){
           case CPU:
             printf("\t\tmove to ready\n");
+            running->arrival_time=os->timer;
             List_pushBack(&os->ready, (ListItem*) running);
             break;
           case IO:
             printf("\t\tmove to waiting\n");
+            running->arrival_time=-1;
             List_pushBack(&os->waiting, (ListItem*) running);
             break;
           }
@@ -178,6 +185,7 @@ void FakeOS_simStep(FakeOS* os){
   
   // call schedule, if defined
   if (os->schedule_fn ){
+    (*os->schedule_fn)(os, os->schedule_args, -1); 
     for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
         (*os->schedule_fn)(os, os->schedule_args, i);
@@ -195,4 +203,5 @@ void FakeOS_simStep(FakeOS* os){
 }
 
 void FakeOS_destroy(FakeOS* os) {
+  free(os->running);
 }

@@ -15,18 +15,21 @@ int FakeProcess_load(FakeProcess* p, const char* filename) {
   p->arrival_time=-1;
   List_init(&p->events);
   p->list.prev=p->list.next=0;
+  p->priority=0;
   int num_events=0;
   while (getline(&buffer, &line_length, f) >0){
     // got line in buf
     int pid=-1;
     int arrival_time=-1;
+    int priority=0;
     int num_tokens=0;
     int duration=-1;
 
-    num_tokens=sscanf(buffer, "PROCESS %d %d", &pid, &arrival_time);
-    if (num_tokens==2 && p->pid<0){
+    num_tokens=sscanf(buffer, "PROCESS %d %d %d", &pid, &arrival_time, &priority);
+    if (num_tokens==3 && p->pid<0){
       p->pid=pid;
       p->arrival_time=arrival_time;
+      p->priority=priority;
       goto next_round;
     }
     num_tokens=sscanf(buffer, "CPU_BURST %d", &duration);

@@ -9,6 +9,9 @@ typedef struct {
   ListItem list;
   int pid;
   ListHead events;
+  int age;
+  int priority;
+  int arrival_time;
 } FakePCB;
 
 struct FakeOS;
