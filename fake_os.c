@@ -5,7 +5,7 @@
 
 #include "fake_os.h"
 
-void FakeOS_init(FakeOS* os, int n_cpu) {
+void FakeOS_init(FakeOS* os, unsigned n_cpu) {
   if (n_cpu)  
      os->n_cpu=n_cpu;
   else 
@@ -16,6 +16,7 @@ void FakeOS_init(FakeOS* os, int n_cpu) {
   List_init(&os->waiting);
   List_init(&os->processes);
   os->timer=0;
+  os->schdule_fn_type=-1;
   os->schedule_fn=0;
 }
 
@@ -62,8 +63,22 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   ProcessEvent* e=(ProcessEvent*)new_pcb->events.first;
   switch(e->type){
   case CPU:
-    new_pcb->arrival_time=os->timer;
-    List_pushBack(&os->ready, (ListItem*) new_pcb);
+    if (os->schdule_fn_type == RR_SCHED)
+      List_pushBack(&os->ready, (ListItem*) new_pcb);
+    else {
+      new_pcb->arrival_time=os->timer;
+      ListItem* aux=os->ready.first;
+      while (aux){
+        FakePCB* pcb=(FakePCB*)aux;
+        if (pcb->priority-pcb->age > new_pcb->priority){
+          List_insert_next(&os->ready, (ListItem*)pcb, (ListItem*)new_pcb);
+          break;
+        }
+        aux=aux->next;
+      }  
+      if (!aux)
+        List_pushBack(&os->ready, (ListItem*) new_pcb);
+    }
     break;
   case IO:
     List_pushBack(&os->waiting, (ListItem*) new_pcb);
@@ -124,7 +139,22 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
-          List_pushBack(&os->ready, (ListItem*) pcb);
+          if (os->schdule_fn_type == RR_SCHED)
+            List_pushBack(&os->ready, (ListItem*) pcb);
+          else {
+            pcb->arrival_time=os->timer;
+            ListItem* aux=os->ready.first;
+            while (aux){
+              FakePCB* next_pcb=(FakePCB*)aux;
+              if (next_pcb->priority-next_pcb->age > pcb->priority){
+                List_insert_next(&os->ready, (ListItem*)next_pcb, (ListItem*)pcb);
+                break;
+              }
+              aux=aux->next;
+            }  
+            if (!aux)
+              List_pushBack(&os->ready, (ListItem*) pcb);
+          }
           break;
         case IO:
           printf("\t\tmove to waiting\n");
@@ -161,8 +191,22 @@ void FakeOS_simStep(FakeOS* os){
           switch (e->type){
           case CPU:
             printf("\t\tmove to ready\n");
-            running->arrival_time=os->timer;
-            List_pushBack(&os->ready, (ListItem*) running);
+            if (os->schdule_fn_type == RR_SCHED)
+              List_pushBack(&os->ready, (ListItem*) running);
+            else {
+              running->arrival_time=os->timer;
+              ListItem* aux=os->ready.first;
+              while (aux){
+                FakePCB* next_pcb=(FakePCB*)aux;
+                if (next_pcb->priority-next_pcb->age > running->priority){
+                  List_insert_next(&os->ready, (ListItem*)next_pcb, (ListItem*)running);
+                  break;
+                }
+                aux=aux->next;
+              }  
+              if (!aux)
+                List_pushBack(&os->ready, (ListItem*) running);
+            }
             break;
           case IO:
             printf("\t\tmove to waiting\n");
@@ -175,17 +219,26 @@ void FakeOS_simStep(FakeOS* os){
       }
     }
   }
-
-  aux=os->ready.first;
-  while(aux) {
-    FakePCB* pcb=(FakePCB*)aux;
-    aux=aux->next;
-    printf("\tready pid:%d\n",pcb->pid);
-  }
   
   // call schedule, if defined
   if (os->schedule_fn ){
-    (*os->schedule_fn)(os, os->schedule_args, -1); 
+    (*os->schedule_fn)(os, os->schedule_args, -1);
+    aux=os->ready.first;
+    if (os->schdule_fn_type==P_SCHED){
+      while(aux){
+        FakePCB* pcb=(FakePCB*)aux;
+        aux=aux->next;
+        printf("\tready pid:%d\n\t\tpriority:%d\n",pcb->pid,pcb->priority-pcb->age);
+      }
+    }
+    else {
+      aux=os->ready.first;
+      while(aux) {
+        FakePCB* pcb=(FakePCB*)aux;
+        aux=aux->next;
+        printf("\tready pid:%d\n",pcb->pid);
+      }
+    }
     for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
         (*os->schedule_fn)(os, os->schedule_args, i);

@@ -47,7 +47,7 @@ void prioritySched(FakeOS* os, void* args_, int cpu){
       FakePCB* pcb=(FakePCB*)aux;
       aux=aux->next;
       if ((os->timer-pcb->arrival_time) && 
-        !(os->timer-pcb->arrival_time) % args->ageing_time)
+        !((os->timer-pcb->arrival_time) % args->ageing_time))
         pcb->age++;
     }
   }
@@ -89,17 +89,26 @@ int main(int argc, char** argv) {
   }
 
   int i = 1;
-  int cpu = atoi(argv[1]);
+  unsigned cpu = atoi(argv[1]);
   if (cpu) {
     os.n_cpu = cpu;
     ++i;
   }
 
   FakeOS_init(&os,cpu);
-  SchedRRArgs srr_args;
-  srr_args.quantum=5;
-  os.schedule_args=&srr_args;
-  os.schedule_fn=schedRR;
+
+  // SchedRRArgs srr_args;
+  // srr_args.quantum=5;
+  // os.schedule_args=&srr_args;
+  // os.schedule_fn=schedRR;
+  // os.schdule_fn_type=RR_SCHED;
+
+  prioritySchedArgs sp_args;
+  sp_args.quantum=5;
+  sp_args.ageing_time=2;
+  os.schedule_args=&sp_args;
+  os.schedule_fn=prioritySched;
+  os.schdule_fn_type=P_SCHED;
   
   for (; i<argc; ++i){
     FakeProcess new_process;
@@ -112,7 +121,7 @@ int main(int argc, char** argv) {
       List_pushBack(&os.processes, (ListItem*)new_process_ptr);
     }
   }
-  printf("num processes in queue %d, num cpu %d\n", os.processes.size, os.n_cpu);
+  printf("num processes in queue %d, num cpu %d, sched type %d\n", os.processes.size, os.n_cpu, os.schdule_fn_type);
   while(os.running[0]
         || os.ready.first
         || os.waiting.first

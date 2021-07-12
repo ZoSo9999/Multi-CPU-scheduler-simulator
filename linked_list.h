@@ -18,3 +18,5 @@ ListItem* List_detach(ListHead* head, ListItem* item);
 ListItem* List_pushBack(ListHead* head, ListItem* item);
 ListItem* List_pushFront(ListHead* head, ListItem* item);
 ListItem* List_popFront(ListHead* head);
+
+ListItem* List_insert_next(ListHead* head, ListItem* next, ListItem* item);

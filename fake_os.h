@@ -3,6 +3,8 @@
 #pragma once
 
 #define MAX_RUNNING 1
+#define RR_SCHED 0
+#define P_SCHED 1
 
 
 typedef struct {
@@ -22,13 +24,14 @@ typedef struct FakeOS{
   ListHead ready;
   ListHead waiting;
   int timer;
-  int n_cpu;
+  unsigned n_cpu;
+  char schdule_fn_type;
   ScheduleFn schedule_fn;
   void* schedule_args;
 
   ListHead processes;
 } FakeOS;
 
-void FakeOS_init(FakeOS* os, int n_cpu);
+void FakeOS_init(FakeOS* os, unsigned n_cpu);
 void FakeOS_simStep(FakeOS* os);
 void FakeOS_destroy(FakeOS* os);

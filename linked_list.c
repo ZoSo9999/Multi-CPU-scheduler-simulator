@@ -18,6 +18,27 @@ ListItem* List_find(ListHead* head, ListItem* item) {
   return 0;
 }
 
+ListItem* List_insert_next(ListHead* head, ListItem* next, ListItem* item){
+  if (item->next || item->prev)
+    return 0;
+  
+  ListItem* prev = next ? next->prev : head->last;
+  if (prev) {
+    item->prev=prev;
+    prev->next=item;
+  }
+  if (next) {
+    item->next=next;
+    next->prev=item;
+  }
+  if (!prev)
+    head->first=item;
+  if(!next)
+    head->last=item;
+  ++head->size;
+  return item;
+}
+
 ListItem* List_insert(ListHead* head, ListItem* prev, ListItem* item) {
   if (item->next || item->prev)
     return 0;
