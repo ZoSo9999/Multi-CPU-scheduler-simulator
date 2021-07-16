@@ -97,18 +97,18 @@ int main(int argc, char** argv) {
 
   FakeOS_init(&os,cpu);
 
-  // SchedRRArgs srr_args;
-  // srr_args.quantum=5;
-  // os.schedule_args=&srr_args;
-  // os.schedule_fn=schedRR;
-  // os.schdule_fn_type=RR_SCHED;
+  SchedRRArgs srr_args;
+  srr_args.quantum=5;
+  os.schedule_args=&srr_args;
+  os.schedule_fn=schedRR;
+  os.schdule_fn_type=RR_SCHED;
 
-  prioritySchedArgs sp_args;
-  sp_args.quantum=5;
-  sp_args.ageing_time=2;
-  os.schedule_args=&sp_args;
-  os.schedule_fn=prioritySched;
-  os.schdule_fn_type=P_SCHED;
+  // prioritySchedArgs sp_args;
+  // sp_args.quantum=5;
+  // sp_args.ageing_time=2;
+  // os.schedule_args=&sp_args;
+  // os.schedule_fn=prioritySched;
+  // os.schdule_fn_type=P_SCHED;
   
   for (; i<argc; ++i){
     FakeProcess new_process;

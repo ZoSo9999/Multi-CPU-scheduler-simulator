@@ -96,6 +96,11 @@ void FakeOS_simStep(FakeOS* os){
   
   printf("************** TIME: %08d **************\n", os->timer);
 
+  //aging processes
+  if (os->schdule_fn_type==P_SCHED)
+    (*os->schedule_fn)(os, os->schedule_args, -1);
+
+
   //scan process waiting to be started
   //and create all processes starting now
   ListItem* aux=os->processes.first;
@@ -220,25 +225,18 @@ void FakeOS_simStep(FakeOS* os){
     }
   }
   
-  // call schedule, if defined
-  if (os->schedule_fn ){
-    (*os->schedule_fn)(os, os->schedule_args, -1);
+  // call schedule and list the ready processes, if defined
+  if (os->schedule_fn){
     aux=os->ready.first;
-    if (os->schdule_fn_type==P_SCHED){
-      while(aux){
-        FakePCB* pcb=(FakePCB*)aux;
-        aux=aux->next;
-        printf("\tready pid:%d\n\t\tpriority:%d\n",pcb->pid,pcb->priority-pcb->age);
-      }
+    while(aux){
+    FakePCB* pcb=(FakePCB*)aux;
+    aux=aux->next;
+    if (os->schdule_fn_type==P_SCHED)
+        printf("\tready pid:%d\n\t\tpriority:%d\n",pcb->pid,pcb->priority-pcb->age<0 ? 0:pcb->priority-pcb->age);
+    else 
+      printf("\tready pid:%d\n",pcb->pid);
     }
-    else {
-      aux=os->ready.first;
-      while(aux) {
-        FakePCB* pcb=(FakePCB*)aux;
-        aux=aux->next;
-        printf("\tready pid:%d\n",pcb->pid);
-      }
-    }
+
     for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
         (*os->schedule_fn)(os, os->schedule_args, i);
