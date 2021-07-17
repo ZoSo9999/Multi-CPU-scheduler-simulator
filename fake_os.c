@@ -5,6 +5,8 @@
 
 #include "fake_os.h"
 
+// #define _OS_DEBUG_
+
 void FakeOS_init(FakeOS* os, unsigned n_cpu) {
   if (n_cpu)  
      os->n_cpu=n_cpu;
@@ -227,15 +229,17 @@ void FakeOS_simStep(FakeOS* os){
   
   // call schedule and list the ready processes, if defined
   if (os->schedule_fn){
-    aux=os->ready.first;
-    while(aux){
-    FakePCB* pcb=(FakePCB*)aux;
-    aux=aux->next;
-    if (os->schdule_fn_type==P_SCHED)
-        printf("\tready pid:%d\n\t\tpriority:%d\n",pcb->pid,pcb->priority-pcb->age<0 ? 0:pcb->priority-pcb->age);
-    else 
-      printf("\tready pid:%d\n",pcb->pid);
-    }
+    #ifdef _OS_DEBUG_
+      aux=os->ready.first;
+      while(aux){
+      FakePCB* pcb=(FakePCB*)aux;
+      aux=aux->next;
+      if (os->schdule_fn_type==P_SCHED)
+          printf("\tready pid:%d\n\t\tpriority:%d\n",pcb->pid,pcb->priority-pcb->age<0 ? 0:pcb->priority-pcb->age);
+      else 
+        printf("\tready pid:%d\n",pcb->pid);
+      }
+    #endif
 
     for (i=0; i<os->n_cpu; ++i)
       if (!os->running[i])
